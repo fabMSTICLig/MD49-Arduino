@@ -1,10 +1,3 @@
-/*
-  MD49.cpp - Library for MD49 controller
-  Created by Germain Lemasson, June 22, 2017.
-  Released into the public domain.
-*/
-
-#include "MD49.h"
 
 #define CMD        (byte)0x00       // MD49 command address of 0
 #define GET_SPEED1       0x21  // returns the current requested speed of motor 1
@@ -29,7 +22,7 @@
 #define DISABLE_TIMEOUT  0x38
 #define ENABLE_TIMEOUT   0x39
 
-void MD49::sendCmd(byte cmd,byte val)
+template<typename S> void MD49<S>::sendCmd(byte cmd,byte val)
 {
 	m_serial.write((byte)CMD);
 	m_serial.write(cmd);
@@ -37,7 +30,7 @@ void MD49::sendCmd(byte cmd,byte val)
 }
 
 
-byte MD49::getByte()
+template<typename S> byte MD49<S>::getByte()
 {
 	m_timeout=millis()+500;
 	while(m_serial.available() <= 0 && millis()<m_timeout)
@@ -47,7 +40,7 @@ byte MD49::getByte()
 	if(millis()>m_timeout) return -1;
 	return m_serial.read();
 }
-int MD49::getInt()
+template<typename S> int MD49<S>::getInt()
 {
 	m_timeout=millis()+500;
 	while(m_serial.available() < 4 && millis()<m_timeout)
@@ -63,66 +56,66 @@ int MD49::getInt()
 	return ret;
 }
 
-MD49::MD49(HardwareSerial & serial) : m_serial(serial), m_mode(MD49_MODE0)
+template<typename S> MD49<S>::MD49(S & serial) : m_serial(serial), m_mode(MD49_MODE0)
 {
 
 }
-void MD49::init(int baud)
+template<typename S> void MD49<S>::init(int baud)
 {
 	m_serial.begin(baud);
 }
-int MD49::getSpeed(byte num)
+template<typename S> int MD49<S>::getSpeed(byte num)
 {
 	sendCmd(num == 1 ? GET_SPEED1 :GET_SPEED2);
 	return getByte();
 }
-int MD49::getTurn()
+template<typename S> int MD49<S>::getTurn()
 {
 	return getSpeed(2);
 }
-int MD49::getCurrent(byte num)
+template<typename S> int MD49<S>::getCurrent(byte num)
 {
 	sendCmd(num == 1 ? GET_CURR1 :GET_CURR2);
 	return getByte();
 
 }
-int MD49::getEncoder(byte num)
+template<typename S> int MD49<S>::getEncoder(byte num)
 {
 	sendCmd(num == 1 ? GET_ENC1 :GET_ENC2);
 	return getInt();
 
 }
-void MD49::getEncoders(int * encs)
+template<typename S> void MD49<S>::getEncoders(int * encs)
 {
 	sendCmd(GET_ENCS);
 	encs[0]= getInt();
 	encs[1]= getInt();
 }
-int MD49::getVolt()
+template<typename S> int MD49<S>::getVolt()
 {
 	sendCmd(GET_VOLTS);
 	return getByte();
 }
-int MD49::getAccel()
+template<typename S> int MD49<S>::getAccel()
 {
 	sendCmd(GET_ACCEL);
 	return getByte();
 
 }
-MD49_MODE_t MD49::getMode()
+template<typename S> MD49_MODE_t MD49<S>::getMode()
 {
 	sendCmd(GET_MODE);
 	m_mode = (MD49_MODE_t)getByte();
 	return m_mode;
 
 }
-byte MD49::getError()
+template<typename S> byte MD49<S>::getError()
 {
 	sendCmd(GET_ERROR);
 	return getByte();
 }
 
-boolean MD49::checkspeed(int val)
+template<typename S> boolean MD49<S>::checkspeed(int val)
 {
 	if(val <0 && (m_mode == MD49_MODE0 || m_mode == MD49_MODE2)) return false;
 	if(val >128 && (m_mode == MD49_MODE1 || m_mode == MD49_MODE3)) return false;
@@ -130,47 +123,47 @@ boolean MD49::checkspeed(int val)
 	return true;
 }
 
-void MD49::setSpeed1(int speed)
+template<typename S> void MD49<S>::setSpeed1(int speed)
 {
 	if(checkspeed(speed))
 		sendCmd(SET_SPEED1, speed);
 }
-void MD49::setSpeed2(int speed)
+template<typename S> void MD49<S>::setSpeed2(int speed)
 {
 	if(checkspeed(speed) && (m_mode == MD49_MODE1 || m_mode == MD49_MODE0))
 		sendCmd(SET_SPEED2, speed);
 }
-void MD49::setTurn(int turn)
+template<typename S> void MD49<S>::setTurn(int turn)
 {
 	//if(checkspeed(turn) && (m_mode == MD49_MODE2 || m_mode == MD49_MODE3))
 		setSpeed2(turn);
 }
-void MD49::setAccel(byte acc)
+template<typename S> void MD49<S>::setAccel(byte acc)
 {
 	sendCmd(SET_ACCEL, acc);
 
 }
-void MD49::setMode(MD49_MODE_t mode)
+template<typename S> void MD49<S>::setMode(MD49_MODE_t mode)
 {
 	m_mode=mode;
 	sendCmd(SET_MODE, (byte)mode);
 
 }
-void MD49::resetEncoder()
+template<typename S> void MD49<S>::resetEncoder()
 {
 	sendCmd(RESET_ENCODERS);
 }
-void MD49::setRegulator(boolean on)
+template<typename S> void MD49<S>::setRegulator(boolean on)
 {
 	sendCmd(on ? ENABLE_REGUL : DISABLE_REGUL);
 }
-void MD49::setTimeout(boolean on)
+template<typename S> void MD49<S>::setTimeout(boolean on)
 {
 	sendCmd(on ? ENABLE_TIMEOUT : DISABLE_TIMEOUT);
 }
 
 
-void MD49::stop()
+template<typename S> void MD49<S>::stop()
 {
 	getMode();
 	if(m_mode == MD49_MODE1 || m_mode == MD49_MODE0)
