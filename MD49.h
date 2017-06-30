@@ -37,7 +37,7 @@ void stop();
 
 };
 
-#include<md49.tpp>
+#include<MD49.tpp>
 
 
 #endif
